@@ -12,6 +12,9 @@ examples and templates. Project skills can live under `.cortex/skills/` or
 repositories or Snowflake stages. Check Snowflake's Cortex Code CLI
 extensibility docs for the current mechanics.
 
+For Snowflake and MCP examples used as packaging and behavior benchmarks, see
+[reference_benchmarks.md](reference_benchmarks.md).
+
 ## Goal
 
 An Airlock CoCo skill should make Cortex Code reliably do this:
@@ -112,6 +115,13 @@ Without MCP, the skill can still work by instructing CoCo to call SQL
 procedures. With MCP, the skill should prefer typed tools such as
 `airlock_describe_spec`, `airlock_validate_data`, and `airlock_load_data`.
 
+Snowflake-managed MCP can expose stored procedures as generic tools when a
+customer wants the whole integration hosted in Snowflake. The Airlock skill
+should still add value in that setup by teaching role boundaries, discovery
+order, validate-before-load behavior, attachment policy, expectations, and
+delegation semantics. If the Airlock Tools MCP server is available, prefer its
+typed Airlock tools for common workflows.
+
 ## What the Skill Should Teach
 
 ### Marketplace Install and Native App Security
@@ -202,14 +212,16 @@ requirements, workflow gates, and role/path permissions.
 
 ### Delegation
 
-When installed Airlock documentation exposes user-to-agent delegation parameters,
-the skill should follow [agent_delegation.md](agent_delegation.md).
+The skill should follow [agent_delegation.md](agent_delegation.md) for
+user-to-agent delegation.
 
 Delegation is not impersonation. Teach agents to:
 
 - never log in as the principal user
-- use `on_behalf_of_user` and `delegation_id` only when the installed procedure
-  signature supports them
+- use `airlock.user.list_my_delegations('received')` or
+  `airlock_list_my_delegations(direction='received')` to discover active grants
+- pass `on_behalf_of_user` and `delegation_id` only to procedures that support
+  delegated actions
 - report delegated work as actor acting for principal, for example
   `Submitted as Deb for Joe`
 - preserve delegation denial codes and structured actor/principal/delegation

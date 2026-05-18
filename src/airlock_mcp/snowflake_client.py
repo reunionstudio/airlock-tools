@@ -82,6 +82,6 @@ def _snowflake_connector() -> Any:
         import snowflake.connector
     except ImportError as exc:  # pragma: no cover - exercised only without dependency installed
         raise RuntimeError(
-            "snowflake-connector-python is required. Install with `pip install airlock-mcp`."
+            "snowflake-connector-python is required. Install with `pip install airlock-tools`."
         ) from exc
     return snowflake.connector

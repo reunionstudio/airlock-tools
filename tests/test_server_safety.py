@@ -86,9 +86,99 @@ def test_attachment_tools_pass_role_lens_and_tag(monkeypatch) -> None:
                 "automation_user",
                 True,
                 "receipt",
+                None,
+                None,
             ],
         )
     ]
+
+
+def test_load_data_passes_delegation_context(monkeypatch) -> None:
+    server = importlib.import_module("airlock_mcp.server")
+    calls = []
+
+    def fake_call(procedure, args=None):
+        calls.append((procedure, args))
+        return {"ok": True}
+
+    monkeypatch.setattr(server, "_call", fake_call)
+
+    server.airlock_load_data(
+        "timesheets",
+        file_content="employee,hours\njoe,8",
+        filename="joe_timesheet",
+        in_app_role="timesheet_agent",
+        on_behalf_of_user="joe",
+        delegation_id="D123",
+    )
+
+    assert calls == [
+        (
+            "airlock.user.load_data",
+            [
+                "timesheets",
+                None,
+                "employee,hours\njoe,8",
+                "joe_timesheet",
+                "timesheet_agent",
+                None,
+                None,
+                None,
+                True,
+                "joe",
+                "D123",
+            ],
+        )
+    ]
+
+
+def test_delegation_tools_use_user_procedures(monkeypatch) -> None:
+    server = importlib.import_module("airlock_mcp.server")
+    calls = []
+
+    def fake_call(procedure, args=None):
+        calls.append((procedure, args))
+        return {"ok": True}
+
+    monkeypatch.setattr(server, "_call", fake_call)
+
+    create_result = server.airlock_create_delegation(
+        {
+            "actor_user": "deb",
+            "spec_name": "demo_employee_reimbursements",
+            "allowed_actions": ["load_data", "add_attachment"],
+        }
+    )
+    list_result = server.airlock_list_my_delegations("received", "demo_employee_reimbursements")
+
+    assert create_result == {"ok": True}
+    assert list_result == {"ok": True}
+    assert calls == [
+        (
+            "airlock.user.create_delegation",
+            [
+                {
+                    "actor_user": "deb",
+                    "spec_name": "demo_employee_reimbursements",
+                    "allowed_actions": ["load_data", "add_attachment"],
+                },
+                True,
+            ],
+        ),
+        (
+            "airlock.user.list_my_delegations",
+            ["received", "demo_employee_reimbursements", False],
+        ),
+    ]
+
+
+def test_create_delegation_rejects_empty_descriptor() -> None:
+    server = importlib.import_module("airlock_mcp.server")
+
+    result = server.airlock_create_delegation({})
+
+    assert result["ok"] is False
+    assert result["code"] == "INVALID_DELEGATION_DESCRIPTOR"
 
 
 def test_expectation_work_tool_uses_user_visible_procedure(monkeypatch) -> None:

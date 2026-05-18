@@ -5,6 +5,8 @@ stored procedures remain the source of truth, see
 [mcp_ai_agents_airlock_procedures.md](mcp_ai_agents_airlock_procedures.md).
 For Cortex Code skill packaging, see
 [airlock_cortex_code_skill_guide.md](airlock_cortex_code_skill_guide.md).
+For external MCP and Cortex Code benchmarks, see
+[reference_benchmarks.md](reference_benchmarks.md).
 For proposed user-to-agent delegation semantics, see
 [agent_delegation.md](agent_delegation.md).
 
@@ -41,6 +43,24 @@ Authorization remains inside Snowflake and Airlock:
 The server must not query Airlock-owned hybrid tables, secure views, or stages
 directly.
 
+## Reference Benchmarks
+
+Airlock Tools should be compatible with the patterns agents already see in
+Snowflake and MCP ecosystems:
+
+- Cortex Code skills are `SKILL.md` instruction packages with focused examples
+  and optional tool configuration.
+- Snowflake-managed MCP can expose generic stored procedure tools when direct
+  procedure invocation is enough.
+- This server adds Airlock-specific behavior: typed tool names, safe defaults,
+  normalized structured results, resource URIs, prompts, and delegation-aware
+  responses.
+- Official MCP SDKs and reference servers are the benchmark for transport,
+  registration, and boundary discipline.
+
+The design goal is not to compete with generic Snowflake MCP. It is to make
+Airlock's procedure surface easier for agents to use correctly.
+
 ## Documentation Sources
 
 Use documentation in this order:
@@ -67,11 +87,12 @@ context. `variant` fields should be governed with `variant_shape` or documented
 `field_path` checks when supported, so flexibility stays inside the Airlock spec
 contract.
 
-Future delegation support must follow [agent_delegation.md](agent_delegation.md).
-MCP tools may accept `on_behalf_of_user` and `delegation_id` only when the
-installed Airlock documentation exposes those procedure parameters. Tool
-responses must preserve actor user, principal user, and delegation id instead of
-summarizing delegated work as direct user action.
+Delegation support follows [agent_delegation.md](agent_delegation.md). The MCP
+server exposes only the installed user-safe delegation contract:
+`airlock.user.create_delegation`, `airlock.user.list_my_delegations`, and
+delegated `load_data` / `add_attachment` parameters. Tool responses must
+preserve actor user, principal user, and delegation id instead of summarizing
+delegated work as direct user action.
 
 ## Install and Storage Permissions
 
@@ -108,6 +129,11 @@ Discovery:
 - `airlock_get_documentation`
 - `airlock_list_my_roles`
 - `airlock_check_license`
+
+Delegation:
+
+- `airlock_create_delegation`
+- `airlock_list_my_delegations`
 
 Spec discovery:
 
@@ -149,8 +175,6 @@ logged without arguments, file contents, secrets, or stack traces.
 
 - File reference tools after the installed procedure signatures are available in
   structured documentation.
-- Delegation parameters for supported user actions after the installed Airlock
-  API exposes the contract.
 - Admin mode behind explicit configuration.
 - Generated JSON schemas from installed procedure documentation.
 - Larger file streaming or staged-path helpers.

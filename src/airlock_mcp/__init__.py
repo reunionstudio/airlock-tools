@@ -1,4 +1,4 @@
-"""Airlock MCP server package."""
+"""Airlock Tools MCP server package."""
 
 __all__ = ["__version__"]
 

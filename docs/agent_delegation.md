@@ -1,14 +1,20 @@
 # Agent Delegation Design
 
-This document defines the proposed Airlock contract for user-to-agent
-delegation. It is a design document, not a shipped API reference. Do not treat
-the procedure names or parameters here as available until the installed Airlock
-documentation exposes them.
+This document defines the proposed Airlock contract for user-to-agent delegation.
+It is a design document, not a shipped API reference. Do not treat the procedure
+names here as available until `docs/airlock_api_v1.md` and the installed
+documentation expose them.
 
 ## Summary
 
 Agent delegation lets a human or business user explicitly authorize an agent
 account to perform limited Airlock actions on that user's behalf.
+
+Delegation is an API authority model, not an interactive Streamlit work mode.
+The Streamlit UI may help users create, view, and revoke delegation grants, but
+delegated execution belongs in stored procedure calls made by bots or agent
+tools. Human Streamlit work remains direct-mode: the user chooses their own
+Airlock role and acts as themselves.
 
 Delegation is not impersonation. Airlock must keep both identities visible:
 
@@ -16,19 +22,19 @@ Delegation is not impersonation. Airlock must keep both identities visible:
 - `principal_user`: the user on whose behalf the action was performed.
 - `delegation_id`: the explicit active grant used for the action.
 
-Good audit wording:
+Good audit sentence:
 
 ```text
 Deb submitted joe_timesheet_2026_05_17.csv on behalf of Joe.
 ```
 
-Avoid:
+Bad audit sentence:
 
 ```text
 Joe submitted joe_timesheet_2026_05_17.csv.
 ```
 
-The second sentence hides the actor and turns delegation into impersonation.
+The bad sentence hides the actor and turns delegation into impersonation.
 
 ## Product Defaults
 
@@ -39,9 +45,9 @@ The conservative default is:
 - Actor and principal are both evaluated by the PDP.
 - Delegated files use the principal user's path scope when the spec has
   per-user isolated directories.
-- The actor is visible in `created_by`, `uploaded_by`, events, and procedure
+- The actor must be visible in `created_by`, `uploaded_by`, events, and procedure
   result context.
-- The principal is visible in delegated result context and events.
+- The principal must be visible in delegated result context and events.
 - Ambiguous delegation grants fail instead of guessing.
 
 ## Initial Action Set
@@ -52,21 +58,26 @@ Recommended phase-one delegated actions:
 | --- | --- | --- |
 | `validate_data` | Yes | Read/validation planning, no mutation. |
 | `load_data` | Yes | Primary use case: agent submits a user's file. |
-| `add_attachment` | Yes | Needed for evidence such as reimbursements or timesheets. |
-| `replace_attachment` | Later | Permanent in Airlock and needs clearer policy. |
+| `add_attachment` | Yes | Needed for reimbursements/timesheets with evidence. |
+| `replace_attachment` | Later | It is permanent in Airlock and needs clearer policy. |
 | `delete_files` | No | Destructive and not needed for first submission workflows. |
 | `delete_attachment` | No | Destructive and not needed for first submission workflows. |
 | workflow submit transition | Later | Useful, but should be action-scoped by workflow policy. |
 | workflow approval/rejection | No | Governance decision, not a simple delegated submission. |
 | spec/admin operations | No | Too broad for user-to-agent delegation. |
 
-Example split: an agent can be delegated to validate, load, and add evidence for
-a user's reimbursement, but submit/review/approval workflow transitions remain
-outside the grant until product policy explicitly allows them.
+The reimbursement demo follows this split: Deb can be seeded as asmith's delegate
+for `validate_data`, `load_data`, and `add_attachment`, but submit/review/approval
+workflow transitions are intentionally outside the grant.
 
 ## Spec Configuration
 
 Delegation belongs in spec access/workflow policy, not column validation.
+
+Delegation is always user-level. A delegate may also hold Airlock roles for
+their own work, but delegated calls must not borrow or merge those roles. At
+runtime Airlock re-checks the principal user's current access to the spec; if
+the principal loses access, the delegation stops authorizing work.
 
 Proposed config shape:
 
@@ -75,7 +86,6 @@ Proposed config shape:
   "delegation_policy": {
     "enabled": false,
     "allowed_actions": ["validate_data", "load_data", "add_attachment"],
-    "allowed_actor_roles": ["timesheet_agent", "automation_user"],
     "principal_scope": "assigned_users",
     "workflow_step_actions": [
       {
@@ -99,7 +109,6 @@ Field meanings:
 
 - `enabled`: explicit opt-in for the spec. Default is `false`.
 - `allowed_actions`: delegable Airlock actions for this spec.
-- `allowed_actor_roles`: Airlock roles that may act as delegates.
 - `principal_scope`: which users may be principals. Initial value should be
   `assigned_users`.
 - `workflow_step_actions`: optional per-step narrowing of delegable actions. If
@@ -110,8 +119,8 @@ Field meanings:
 - `max_duration_days`: upper bound on delegation validity.
 
 Use this for submit-style workflows: a spec admin can allow an agent to prepare
-files and attachments while the file is in `Draft`, but keep `Draft ->
-Submitted` or later approval transitions non-delegatable.
+files and attachments while the file is in `Draft`, but keep `Draft -> Submitted`
+or later approval transitions non-delegatable.
 
 ## Delegation Record
 
@@ -129,7 +138,6 @@ core.agent_delegations (
   principal_user_norm VARCHAR NOT NULL,
   actor_user VARCHAR NOT NULL,
   actor_user_norm VARCHAR NOT NULL,
-  actor_airlock_role VARCHAR,
   spec_name VARCHAR NOT NULL,
   allowed_actions VARIANT NOT NULL,
   path_scope VARCHAR,
@@ -144,13 +152,14 @@ core.agent_delegations (
 ```
 
 Normalize user names for lookup, but keep original display values for audit.
+Older installs may still have `actor_airlock_role`; it is legacy metadata only
+and must not participate in runtime authorization.
 
-Useful lookup fields:
+Indexes:
 
 - `actor_user_norm`
 - `principal_user_norm`
 - `spec_name`
-- `actor_airlock_role`
 - active-window fields if Snowflake supports the desired hybrid-table index
   shape
 
@@ -158,7 +167,7 @@ Useful lookup fields:
 
 ### Delegation Management
 
-Possible admin/spec-admin procedures:
+Admin/spec-admin procedures:
 
 ```sql
 CALL airlock.admin.create_delegation(delegation_descriptor, validate_only);
@@ -166,17 +175,31 @@ CALL airlock.admin.list_delegations(in_app_role, spec_name, principal_user, acto
 CALL airlock.admin.revoke_delegation(delegation_id);
 ```
 
-Optional self-service procedures, if product policy allows:
+User self-service procedures:
 
 ```sql
 CALL airlock.user.create_delegation(delegation_descriptor, validate_only);
 CALL airlock.user.list_my_delegations();
-CALL airlock.user.list_delegations_to_me();
-CALL airlock.user.revoke_delegation(delegation_id);
 ```
 
-A conservative first implementation can be admin/spec-admin-created only, with
-user-facing read/list so principals can see what exists.
+`user.create_delegation` is principal-only: the caller is always
+`CURRENT_USER()`. If `principal_user` is supplied, it must match
+`CURRENT_USER()`. This lets asmith grant her agent access for specs she can
+write to, while preventing a delegate from creating a second grant on behalf of
+asmith.
+
+The first user-facing list surface is intentionally one procedure:
+
+```sql
+CALL airlock.user.list_my_delegations('received'); -- grants where CURRENT_USER is the agent/actor
+CALL airlock.user.list_my_delegations('granted');  -- grants where CURRENT_USER is the principal
+CALL airlock.user.list_my_delegations('both');     -- default overview
+```
+
+`received` is the agent-oriented lens. It returns `DELEGATION_ID`,
+`PRINCIPAL_USER`, `ALLOWED_ACTIONS`, and a structured `ACTION_CONTEXT` object so
+an agent can call delegated procedures with `on_behalf_of_user` and
+`delegation_id` without querying broad admin-only metadata.
 
 ### Delegated User Actions
 
@@ -257,14 +280,14 @@ actually submitted it.
 
 ## Event and Manifest Contract
 
-For the first implementation:
+For first implementation:
 
 - Keep `created_by`, `uploaded_by`, and procedure `username` values as actor.
 - Add explicit delegation context to event payloads/results.
-- Consider adding `principal_user` or `on_behalf_of_user` columns only when UI,
+- Consider adding `principal_user` / `on_behalf_of_user` columns only when UI,
   audit queries, or external consumers need direct filtering.
 
-Do not silently store the principal in existing actor columns. That would make
+Do not silently store principal in existing actor columns. That would make
 delegation indistinguishable from impersonation.
 
 ## Licensing Contract
@@ -273,15 +296,14 @@ For the first implementation:
 
 - The actor user must satisfy the same named-license requirement as any other
   caller of `airlock.user.*`.
-- Delegated actions must not automatically claim or bill a seat for the
-  principal user.
+- Delegated actions must not automatically claim or bill a seat for the principal
+  user.
 - The principal user must still be a valid Airlock identity for the spec/path
   policy being evaluated.
 
-This avoids surprise billing when one approved agent submits for many users. If
-a future pricing model charges delegated principals separately, that must be an
-explicit product and Marketplace billing change, not a side effect of
-delegation.
+This avoids surprise billing when one approved agent submits for many users. If a
+future pricing model charges delegated principals separately, that must be an
+explicit product and Marketplace billing change, not a side effect of delegation.
 
 ## Result Contract
 
@@ -300,17 +322,24 @@ Denials should use stable codes:
 
 - `DELEGATION_DISABLED`
 - `DELEGATION_ACTION_NOT_ALLOWED`
-- `DELEGATION_ACTOR_ROLE_NOT_ALLOWED`
 - `DELEGATION_NOT_FOUND`
 - `DELEGATION_EXPIRED`
 - `DELEGATION_REVOKED`
 - `AMBIGUOUS_DELEGATION`
 - `DELEGATION_PRINCIPAL_ACCESS_DENIED`
-- `DELEGATION_ACTOR_ACCESS_DENIED`
 
 ## UI Contract
 
-UI should say:
+Streamlit should not provide an "acting as" work mode for delegated execution.
+Its job is enablement and tracking:
+
+- create a grant for my agent
+- list active and inactive grants involving me
+- revoke grants I issued
+- show delegate-only users that they have no direct Airlock role without treating
+  that as broken
+
+Agent/procedure output should say:
 
 ```text
 Submitting as Deb for Joe
@@ -322,26 +351,24 @@ Avoid:
 Logged in as Joe
 ```
 
-Spec admins should configure delegation near access/workflow controls. User
+Spec admin should configure delegation near access/workflow controls. User
 settings should list active delegations both directions:
 
 - agents who can act for me
 - users I can act for
 
-## MCP and CoCo Contract
+## MCP and Agent Skill Contract
 
 MCP tools should add `on_behalf_of_user` and `delegation_id` only to tools that
-support delegation in the installed Airlock API. Tool descriptions must say the
-call remains audited as the actor acting for the principal.
+support delegation. Tool descriptions must say the call remains audited as the
+actor acting for the principal.
 
-The Cortex Code skill should instruct agents:
+Agent skills should instruct agents:
 
 - never log in as the principal
-- use Airlock delegation parameters only when installed documentation exposes
-  them
+- use Airlock delegation parameters
 - report delegated results as "Submitted as Deb for Joe"
 - preserve delegation denial codes
-- preserve actor, principal, and delegation id in structured output
 
 ## Testing Contract
 
@@ -350,10 +377,8 @@ Required tests before shipping:
 - non-delegated calls still behave exactly as before
 - delegation disabled by default
 - spec delegation disabled denies delegated call
-- actor role not allowed denies call
 - missing/expired/revoked delegation denies call
 - principal access denied denies call
-- actor delegate access denied denies call
 - valid delegation writes to principal path scope for isolated user specs
 - result and event include actor, principal, and delegation id
 - ambiguous active delegation fails without `delegation_id`

@@ -96,15 +96,17 @@ If an Airlock MCP server is available, prefer typed MCP tools such as
 
 # Delegation
 
-Delegation is not impersonation. If installed Airlock documentation exposes
-delegation parameters, use `on_behalf_of_user` and `delegation_id` instead of
-logging in as the principal user. Report delegated work as actor acting for
-principal, for example `Submitted as Deb for Joe`.
+Delegation is not impersonation. Use `airlock_list_my_delegations` or
+`airlock.user.list_my_delegations('received')` to discover active grants where
+the current user is the actor. Use `on_behalf_of_user` and `delegation_id`
+instead of logging in as the principal user. Report delegated work as actor
+acting for principal, for example `Submitted as Deb for Joe`.
 
-Only use delegation parameters when the installed procedure signature supports
-them. Preserve delegation denial codes plus actor, principal, and delegation id
-in structured output. Do not use delegated destructive or governance actions
-unless installed docs and spec policy explicitly allow them.
+Only pass delegation parameters to procedures that support delegated actions,
+such as `load_data` and `add_attachment` in the current user API. Preserve
+delegation denial codes plus actor, principal, and delegation id in structured
+output. Do not use delegated destructive or governance actions unless installed
+docs and spec policy explicitly allow them.
 
 # Flexible Variant Fields
 

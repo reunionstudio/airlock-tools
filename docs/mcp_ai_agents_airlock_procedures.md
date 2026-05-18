@@ -98,9 +98,10 @@ the procedure API:
 The same pattern can later extend to explicitly enabled admin tools or other
 documented schemas when the product surface requires it.
 
-Future delegation support should remain procedure-driven. MCP tools should add
-`on_behalf_of_user` and `delegation_id` only after installed Airlock
-documentation exposes those parameters. Delegated calls must preserve actor,
+Delegation support remains procedure-driven. MCP tools expose the installed
+user-safe delegation surface: create self-service delegations, list delegations
+involving the caller, and pass `on_behalf_of_user` / `delegation_id` to delegated
+`load_data` and `add_attachment` calls. Delegated calls must preserve actor,
 principal, and delegation id in structured output; they must not summarize an
 agent's delegated action as if the principal directly performed it.
 

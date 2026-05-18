@@ -104,10 +104,9 @@ configured.
 - Keep admin tools disabled by default unless product policy changes.
 - Keep destructive MCP tools defaulting to preview or requiring explicit
   confirmation.
-- Do not add delegation parameters to MCP tools until installed Airlock
-  documentation exposes those procedure signatures.
-- When delegation is added, preserve actor user, principal user, delegation id,
-  and denial codes in MCP output.
+- Keep MCP delegation tools aligned with installed Airlock documentation.
+- Preserve actor user, principal user, delegation id, and denial codes in MCP
+  output.
 - Update the normal Airlock CoCo skill when workflow guidance changes.
 - Update `README.md` and docs when setup, packaging, or compatibility changes.
 - Update `.cortex/skills/airlock/references/marketplace-install-and-security.md`

@@ -145,6 +145,32 @@ def airlock_check_license(claim: bool = False) -> dict[str, Any]:
 
 
 @mcp.tool()
+def airlock_create_delegation(
+    delegation_descriptor: dict[str, Any],
+    validate_only: bool = True,
+) -> dict[str, Any]:
+    """Create or validate a self-service delegation where CURRENT_USER is the principal."""
+    procedure = "airlock.user.create_delegation"
+    if not delegation_descriptor:
+        return blocked_result(
+            procedure,
+            "INVALID_DELEGATION_DESCRIPTOR",
+            "delegation_descriptor must be a non-empty object.",
+        )
+    return _call(procedure, [delegation_descriptor, validate_only])
+
+
+@mcp.tool()
+def airlock_list_my_delegations(
+    direction: str = "both",
+    spec_name: str | None = None,
+    include_inactive: bool = False,
+) -> dict[str, Any]:
+    """List delegations involving CURRENT_USER; received rows can authorize delegated calls."""
+    return _call("airlock.user.list_my_delegations", [direction, spec_name, include_inactive])
+
+
+@mcp.tool()
 def airlock_list_specs(
     in_app_role: str | None = None,
     include_managed_roles: bool = True,
@@ -222,8 +248,10 @@ def airlock_load_data(
     attachment_content_base64: str | None = None,
     attachment_filename: str | None = None,
     include_managed_roles: bool = True,
+    on_behalf_of_user: str | None = None,
+    delegation_id: str | None = None,
 ) -> dict[str, Any]:
-    """Load data through Airlock, optionally registering one attachment in the same call."""
+    """Load data through Airlock, optionally as a delegated actor for a principal."""
     procedure = "airlock.user.load_data"
     blocked = _validate_one_content_source(procedure, path, file_content)
     if blocked:
@@ -247,6 +275,8 @@ def airlock_load_data(
             attachment_content_base64,
             attachment_filename,
             include_managed_roles,
+            on_behalf_of_user,
+            delegation_id,
         ],
     )
 
@@ -377,8 +407,10 @@ def airlock_add_attachment(
     in_app_role: str | None = None,
     include_managed_roles: bool = True,
     attachment_tag: str | None = None,
+    on_behalf_of_user: str | None = None,
+    delegation_id: str | None = None,
 ) -> dict[str, Any]:
-    """Add an attachment to an existing file through Airlock checks."""
+    """Add an attachment through Airlock, optionally as a delegated actor for a principal."""
     procedure = "airlock.user.add_attachment"
     if bool(attachment_stage_path) == bool(attachment_content_base64):
         return blocked_result(
@@ -403,6 +435,8 @@ def airlock_add_attachment(
             in_app_role,
             include_managed_roles,
             attachment_tag,
+            on_behalf_of_user,
+            delegation_id,
         ],
     )
 
@@ -509,11 +543,14 @@ def submit_file_to_airlock(spec_name: str, in_app_role: str | None = None) -> st
         "Use installed documentation as source of truth for procedure contracts. "
         "Use the public Airlock docs site only for product context and examples. First call "
         "airlock_describe_spec to inspect fields, accessible paths, workflow, "
-        "and attachment policy. Then call airlock_validate_data with the exact "
+        "and attachment policy. If acting under delegation, call "
+        "airlock_list_my_delegations('received') and preserve the principal and "
+        "delegation id. Then call airlock_validate_data with the exact "
         "CSV content or staged path. Only call airlock_load_data after validation "
         "succeeds. If attachment_required is true, include attachment_content_base64 "
         "and attachment_filename in the load call. Return the structured Airlock "
-        "status, code, issues, path, filename, row count, and attachment result."
+        "status, code, issues, path, filename, row count, attachment result, and "
+        "delegation context when present."
     )
 
 
