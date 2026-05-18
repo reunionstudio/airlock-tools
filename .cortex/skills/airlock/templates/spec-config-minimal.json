@@ -1,0 +1,36 @@
+{
+  "core_config": {
+    "spec_name": "example_spec",
+    "spec_alias": "Example Spec",
+    "description": "Example governed ingestion spec.",
+    "owner_role": "app_admin",
+    "is_published": false,
+    "is_archived": false,
+    "is_multi_role": false
+  },
+  "column_config": [
+    {
+      "name": "record_id",
+      "type": "string",
+      "description": "Stable source record identifier.",
+      "tests": ["not_null"]
+    },
+    {
+      "name": "amount",
+      "type": "number",
+      "description": "Example amount.",
+      "tests": []
+    }
+  ],
+  "file_rules": {
+    "file_format": {
+      "file_type": "csv",
+      "delimiter": ",",
+      "has_header": true
+    }
+  },
+  "attachment_policy": {
+    "attachments_enabled": false,
+    "attachment_required": false
+  }
+}

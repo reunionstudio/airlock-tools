@@ -1,0 +1,66 @@
+{
+  "core_config": {
+    "spec_name": "example_flexible_spec",
+    "spec_alias": "Example Flexible Spec",
+    "description": "Example governed ingestion spec with flexible validated context.",
+    "owner_role": "app_admin",
+    "is_published": false,
+    "is_archived": false,
+    "is_multi_role": false
+  },
+  "column_config": [
+    {
+      "name": "record_id",
+      "type": "string",
+      "description": "Stable source record identifier.",
+      "tests": ["not_null"]
+    },
+    {
+      "name": "amount",
+      "type": "number",
+      "description": "Example amount kept as a typed column for reporting.",
+      "tests": []
+    },
+    {
+      "name": "processing_context",
+      "type": "variant",
+      "description": "Flexible context payload governed by variant_shape validation.",
+      "tests": []
+    }
+  ],
+  "rules": [
+    {
+      "type": "variant_shape",
+      "field": "processing_context",
+      "allowed_root_keys": ["source", "policy", "notes"],
+      "paths": [
+        {
+          "json_path": "$.source.system",
+          "type": "string",
+          "required": false
+        },
+        {
+          "json_path": "$.policy.requires_review",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "json_path": "$.notes.reason",
+          "type": "string",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "file_rules": {
+    "file_format": {
+      "file_type": "csv",
+      "delimiter": ",",
+      "has_header": true
+    }
+  },
+  "attachment_policy": {
+    "attachments_enabled": false,
+    "attachment_required": false
+  }
+}
