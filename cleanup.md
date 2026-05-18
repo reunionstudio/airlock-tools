@@ -17,3 +17,7 @@
 - 2026-05-18: Bootstrapped dependent-repo maintenance docs, synced upstream
   `docs/agent_delegation.md` and `docs/airlock-tools.md`, added user-safe
   delegation MCP tools/parameters, and refreshed delegation guidance.
+- 2026-05-18: Ran inbound dependency sync after v0.1.0 release; verified
+  delegation, license, work-item, and expectation procedure names against
+  upstream Airlock wrappers, kept upstream app-object-name guidance, and added
+  the same caveat to the Cortex quickstart and skill.

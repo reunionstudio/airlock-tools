@@ -12,6 +12,9 @@ workflow, or audit contracts. It calls documented `airlock.user.*` procedures
 and does not query or write Airlock-owned hybrid tables, secure views, or stages
 directly.
 
+Examples assume the installed app object is named `airlock`. If an account uses
+a different app name, set `AIRLOCK_APPLICATION_NAME`.
+
 The Cortex Code skill teaches agents the same safe workflow when they have
 Snowflake SQL tools instead of MCP tools: discover installed docs, distinguish
 Snowflake roles from Airlock roles, describe specs, validate before loading, and

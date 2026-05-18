@@ -4,6 +4,10 @@ Use this path when the agent is Snowflake Cortex Code and can call Snowflake SQL
 tools directly. The Airlock skill teaches Cortex Code how to use Airlock stored
 procedures safely.
 
+Examples assume the installed app object is named `airlock`. If an account uses
+a different app name, substitute that name in SQL examples and verify the active
+application/database context before calling procedures.
+
 ## Prerequisites
 
 - Cortex Code CLI is installed and connected to Snowflake.

@@ -4,6 +4,9 @@ Use this path when your agent host can call MCP tools directly. The Airlock
 Tools MCP server exposes typed Airlock tools that call documented
 `airlock.user.*` stored procedures through Snowflake.
 
+Examples assume the installed app object is named `airlock`. If an account uses
+a different app name, set `AIRLOCK_APPLICATION_NAME`.
+
 ## Prerequisites
 
 - Airlock is installed from the

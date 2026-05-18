@@ -22,6 +22,9 @@ MCP client
               -> Airlock procedures, PDP, events, owned storage
 ```
 
+Examples assume the installed app object is named `airlock`; the server can use
+`AIRLOCK_APPLICATION_NAME` when an account uses a different app name.
+
 Authorization remains inside Snowflake and Airlock:
 
 - Snowflake roles grant access to the Native App and procedures.

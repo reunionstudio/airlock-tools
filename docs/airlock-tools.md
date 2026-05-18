@@ -57,6 +57,9 @@ The mapping is direct:
 | Invocation | `CALL airlock.user.load_data(...)` and related procedure calls |
 | Authorization | Snowflake grants, application roles, Airlock roles, licenses, and PDP checks |
 
+Examples assume the installed app object is named `airlock`. If an account uses
+a different app name, substitute that name or configure the adapter with it.
+
 An MCP server can make Airlock easier for agents by wrapping procedures with
 typed tools and JSON Schema. It should remain a thin, auditable transport layer.
 

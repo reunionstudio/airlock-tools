@@ -34,6 +34,10 @@ MCP tools that call those procedures, and preserve structured outputs.
 
 Installed documentation beats stale repo docs.
 
+Examples assume the installed app object is named `airlock`. If the account uses
+a different app name, substitute that object name in SQL examples and verify the
+active application/database context before calling procedures.
+
 Use the public Airlock documentation site for product concepts and examples:
 `https://reunionstudio.io/airlock/docs/index.html`. Use the Airlock spec library
 for reusable spec-shape ideas and business-object modeling:

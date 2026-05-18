@@ -11,8 +11,8 @@ def test_build_call_sql_with_arguments() -> None:
 
 def test_build_call_sql_respects_application_name() -> None:
     assert (
-        build_call_sql("airlock.user.describe_spec", 2, "AIRLOCK_LEO")
-        == "CALL AIRLOCK_LEO.user.describe_spec(%s, %s)"
+        build_call_sql("airlock.user.describe_spec", 2, "AIRLOCK_APP")
+        == "CALL AIRLOCK_APP.user.describe_spec(%s, %s)"
     )
 
 
